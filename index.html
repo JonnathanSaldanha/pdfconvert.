@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Separador de PDF por Páginas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(to right, #2575fc, #6a11cb);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 30px;
+        }
+        
+        .upload-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            border-right: 1px solid #eee;
+        }
+        
+        .preview-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            color: #2575fc;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .upload-area {
+            border: 3px dashed #6a11cb;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #f8f9ff;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            background-color: #eef2ff;
+            border-color: #2575fc;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: #6a11cb;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #444;
+        }
+        
+        .upload-subtext {
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        #pdfInput {
+            display: none;
+        }
+        
+        .file-info {
+            background-color: #f0f7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .file-info.show {
+            display: block;
+        }
+        
+        .file-info p {
+            margin-bottom: 5px;
+        }
+        
+        .controls {
+            margin-top: 25px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .page-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .page-option {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .page-option:hover {
+            border-color: #6a11cb;
+            background-color: #f0f0ff;
+        }
+        
+        .page-option.selected {
+            background-color: #6a11cb;
+            color: white;
+            border-color: #6a11cb;
+        }
+        
+        .range-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .range-selector input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(37, 117, 252, 0.4);
+        }
+        
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .preview-container {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #777;
+            border: 2px dashed #ccc;
+        }
+        
+        .preview-icon {
+            font-size: 4rem;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        
+        .preview-pages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .page-thumb {
+            width: 100px;
+            height: 130px;
+            background-color: white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+            color: #6a11cb;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-thumb.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #6a11cb;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        .page-number {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #6a11cb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .upload-section {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-file-pdf"></i> Separador de PDF</h1>
+            <p>Carregue um arquivo PDF e selecione as páginas que deseja separar</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <h2 class="section-title">1. Carregar PDF</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Clique para selecionar um arquivo PDF</div>
+                    <div class="upload-subtext">ou arraste e solte o arquivo aqui</div>
+                    <input type="file" id="pdfInput" accept=".pdf">
+                </div>
+                
+                <div class="file-info" id="fileInfo">
+                    <p><strong>Arquivo:</strong> <span id="fileName"></span></p>
+                    <p><strong>Tamanho:</strong> <span id="fileSize"></span></p>
+                    <p><strong>Páginas:</strong> <span id="pageCount"></span></p>
+                </div>
+                
+                <div class="controls">
+                    <h2 class="section-title">2. Selecionar Páginas</h2>
+                    
+                    <div class="control-group">
+                        <label>Selecione páginas individuais:</label>
+                        <div class="page-selector" id="pageSelector">
+                            <!-- As opções de página serão geradas aqui -->
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Ou selecione um intervalo:</label>
+                        <div class="range-selector">
+                            <input type="number" id="rangeStart" placeholder="De" min="1">
+                            <span>até</span>
+                            <input type="number" id="rangeEnd" placeholder="Até" min="1">
+                            <button class="btn btn-secondary" id="applyRange">Aplicar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Ação:</label>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" id="extractBtn" disabled>
+                                <i class="fas fa-cut"></i> Extrair Páginas Selecionadas
+                            </button>
+                            <button class="btn btn-secondary" id="selectAllBtn">
+                                <i class="fas fa-check-square"></i> Selecionar Todas
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <p>Processando PDF, por favor aguarde...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="preview-section">
+                <h2 class="section-title">3. Visualização</h2>
+                
+                <div class="preview-container" id="previewContainer">
+                    <div class="preview-icon">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <p>Nenhum PDF carregado</p>
+                    <p>Selecione um arquivo para visualizar as páginas</p>
+                </div>
+                
+                <div class="preview-pages" id="previewPages" style="display: none;">
+                    <!-- As miniaturas das páginas serão geradas aqui -->
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 Separador de PDF. Todos os direitos reservados. | Desenvolvido com HTML, CSS e JavaScript</p>
+            <p><i class="fas fa-exclamation-circle"></i> O processamento é feito completamente no seu navegador. Nenhum arquivo é enviado para servidores externos.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let pdfDoc = null;
+        let totalPages = 0;
+        let selectedPages = new Set();
+        let pdfBytes = null;
+        
+        // Elementos DOM
+        const uploadArea = document.getElementById('uploadArea');
+        const pdfInput = document.getElementById('pdfInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const pageCount = document.getElementById('pageCount');
+        const pageSelector = document.getElementById('pageSelector');
+        const rangeStart = document.getElementById('rangeStart');
+        const rangeEnd = document.getElementById('rangeEnd');
+        const applyRange = document.getElementById('applyRange');
+        const extractBtn = document.getElementById('extractBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const loading = document.getElementById('loading');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewPages = document.getElementById('previewPages');
+        
+        // Evento para clicar na área de upload
+        uploadArea.addEventListener('click', () => {
+            pdfInput.click();
+        });
+        
+        // Evento para arrastar e soltar arquivo
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#2575fc';
+            uploadArea.style.backgroundColor = '#eef2ff';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#6a11cb';
+            uploadArea.style.backgroundColor = '#f8f9ff';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#6a11cb';
+            uploadArea.style.backgroundColor = '#f8f9ff';
+            
+            if (e.dataTransfer.files.length) {
+                const file = e.dataTransfer.files[0];
+                if (file.type === 'application/pdf') {
+                    handlePDFFile(file);
+                } else {
+                    alert('Por favor, selecione apenas arquivos PDF.');
+                }
+            }
+        });
+        
+        // Evento para selecionar arquivo
+        pdfInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                const file = e.target.files[0];
+                handlePDFFile(file);
+            }
+        });
+        
+        // Função para processar o arquivo PDF
+        async function handlePDFFile(file) {
+            // Mostrar informações do arquivo
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.add('show');
+            
+            // Mostrar loading
+            loading.classList.add('show');
+            extractBtn.disabled = true;
+            
+            try {
+                // Ler o arquivo como array buffer
+                const arrayBuffer = await file.arrayBuffer();
+                pdfBytes = new Uint8Array(arrayBuffer);
+                
+                // Carregar PDF
+                pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+                totalPages = pdfDoc.getPageCount();
+                pageCount.textContent = totalPages;
+                
+                // Gerar seletores de página
+                generatePageSelector(totalPages);
+                
+                // Gerar visualização de páginas
+                generatePagePreviews(totalPages);
+                
+                // Atualizar limites dos campos de intervalo
+                rangeStart.max = totalPages;
+                rangeEnd.max = totalPages;
+                rangeEnd.value = totalPages;
+                
+                // Ocultar loading
+                loading.classList.remove('show');
+                
+            } catch (error) {
+                console.error('Erro ao carregar PDF:', error);
+                alert('Erro ao carregar o arquivo PDF. Certifique-se de que é um PDF válido.');
+                loading.classList.remove('show');
+            }
+        }
+        
+        // Formatar tamanho do arquivo
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            else return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+        
+        // Gerar seletor de páginas
+        function generatePageSelector(total) {
+            pageSelector.innerHTML = '';
+            selectedPages.clear();
+            
+            for (let i = 1; i <= total; i++) {
+                const pageOption = document.createElement('div');
+                pageOption.className = 'page-option';
+                pageOption.textContent = i;
+                pageOption.dataset.page = i;
+                
+                pageOption.addEventListener('click', () => {
+                    togglePageSelection(i, pageOption);
+                });
+                
+                pageSelector.appendChild(pageOption);
+            }
+        }
+        
+        // Gerar visualização de páginas
+        function generatePagePreviews(total) {
+            previewContainer.style.display = 'none';
+            previewPages.style.display = 'flex';
+            previewPages.innerHTML = '';
+            
+            for (let i = 1; i <= total; i++) {
+                const pageThumb = document.createElement('div');
+                pageThumb.className = 'page-thumb';
+                pageThumb.dataset.page = i;
+                pageThumb.innerHTML = `
+                    <span>Página ${i}</span>
+                    <div class="page-number">${i}</div>
+                `;
+                
+                pageThumb.addEventListener('click', () => {
+                    togglePageSelection(i, pageThumb);
+                });
+                
+                previewPages.appendChild(pageThumb);
+            }
+        }
+        
+        // Alternar seleção de página
+        function togglePageSelection(pageNum, element) {
+            if (selectedPages.has(pageNum)) {
+                selectedPages.delete(pageNum);
+                element.classList.remove('selected');
+            } else {
+                selectedPages.add(pageNum);
+                element.classList.add('selected');
+            }
+            
+            // Atualizar botão de extrair
+            extractBtn.disabled = selectedPages.size === 0;
+            
+            // Atualizar o outro elemento correspondente (seletor ou miniatura)
+            const otherElement = document.querySelector(`[data-page="${pageNum}"]:not(.${element.className.includes('page-thumb') ? 'page-thumb' : 'page-option'})`);
+            if (otherElement) {
+                if (selectedPages.has(pageNum)) {
+                    otherElement.classList.add('selected');
+                } else {
+                    otherElement.classList.remove('selected');
+                }
+            }
+        }
+        
+        // Evento para aplicar intervalo
+        applyRange.addEventListener('click', () => {
+            const start = parseInt(rangeStart.value);
+            const end = parseInt(rangeEnd.value);
+            
+            if (!start || !end || start < 1 || end > totalPages || start > end) {
+                alert('Por favor, insira um intervalo válido.');
+                return;
+            }
+            
+            // Limpar seleções anteriores
+            selectedPages.clear();
+            document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            
+            // Selecionar páginas no intervalo
+            for (let i = start; i <= end; i++) {
+                selectedPages.add(i);
+                document.querySelectorAll(`[data-page="${i}"]`).forEach(el => {
+                    el.classList.add('selected');
+                });
+            }
+            
+            // Atualizar botão de extrair
+            extractBtn.disabled = selectedPages.size === 0;
+        });
+        
+        // Evento para selecionar todas as páginas
+        selectAllBtn.addEventListener('click', () => {
+            selectedPages.clear();
+            
+            for (let i = 1; i <= totalPages; i++) {
+                selectedPages.add(i);
+            }
+            
+            // Atualizar elementos visuais
+            document.querySelectorAll('[data-page]').forEach(el => {
+                el.classList.add('selected');
+            });
+            
+            // Atualizar botão de extrair
+            extractBtn.disabled = false;
+        });
+        
+        // Evento para extrair páginas selecionadas
+        extractBtn.addEventListener('click', async () => {
+            if (selectedPages.size === 0) {
+                alert('Por favor, selecione pelo menos uma página.');
+                return;
+            }
+            
+            // Mostrar loading
+            loading.classList.add('show');
+            extractBtn.disabled = true;
+            
+            try {
+                // Criar novo PDF
+                const newPdf = await PDFLib.PDFDocument.create();
+                
+                // Ordenar páginas selecionadas
+                const sortedPages = Array.from(selectedPages).sort((a, b) => a - b);
+                
+                // Copiar páginas selecionadas
+                const pages = await newPdf.copyPages(pdfDoc, sortedPages.map(p => p - 1));
+                
+                // Adicionar páginas ao novo PDF
+                pages.forEach(page => {
+                    newPdf.addPage(page);
+                });
+                
+                // Salvar o novo PDF
+                const newPdfBytes = await newPdf.save();
+                
+                // Criar blob e link para download
+                const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                // Criar link de download
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pdf_separado_${new Date().getTime()}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // Liberar URL
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                
+                // Ocultar loading
+                loading.classList.remove('show');
+                extractBtn.disabled = false;
+                
+                alert(`PDF criado com sucesso! ${sortedPages.length} página(s) extraída(s).`);
+                
+            } catch (error) {
+                console.error('Erro ao extrair páginas:', error);
+                alert('Erro ao extrair páginas. Tente novamente.');
+                loading.classList.remove('show');
+                extractBtn.disabled = false;
+            }
+        });
+        
+        // Inicializar a aplicação
+        document.addEventListener('DOMContentLoaded', () => {
+            // Configurar valores padrão para os campos de intervalo
+            rangeStart.placeholder = `1 a ${totalPages || 'N'}`;
+            rangeEnd.placeholder = `1 a ${totalPages || 'N'}`;
+        });
+    </script>
+</body>
+</html>
