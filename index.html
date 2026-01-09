@@ -6,6 +6,8 @@
     <title>Separador de PDF por Páginas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -193,8 +195,34 @@
             border-radius: 5px;
         }
         
+        .selection-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .selection-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .selection-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
         .action-buttons {
             display: flex;
+            flex-wrap: wrap;
             gap: 15px;
             margin-top: 30px;
         }
@@ -211,6 +239,8 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            flex: 1;
+            min-width: 200px;
         }
         
         .btn-primary {
@@ -230,6 +260,16 @@
         
         .btn-secondary:hover {
             background-color: #e0e0e0;
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 176, 155, 0.4);
         }
         
         .btn:disabled {
@@ -282,6 +322,7 @@
             color: #6a11cb;
             position: relative;
             overflow: hidden;
+            cursor: pointer;
         }
         
         .page-thumb.selected::after {
@@ -344,6 +385,16 @@
             font-size: 0.9rem;
         }
         
+        .selected-count {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f0f7ff;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #2575fc;
+        }
+        
         @media (max-width: 768px) {
             .main-content {
                 flex-direction: column;
@@ -356,6 +407,10 @@
             
             header h1 {
                 font-size: 2rem;
+            }
+            
+            .btn {
+                min-width: 100%;
             }
         }
     </style>
@@ -386,8 +441,27 @@
                     <p><strong>Páginas:</strong> <span id="pageCount"></span></p>
                 </div>
                 
+                <div class="selected-count" id="selectedCount" style="display: none;">
+                    <span id="selectedText">0</span> página(s) selecionada(s)
+                </div>
+                
                 <div class="controls">
                     <h2 class="section-title">2. Selecionar Páginas</h2>
+                    
+                    <div class="selection-buttons">
+                        <button class="selection-btn" id="selectAllBtn">
+                            <i class="fas fa-check-square"></i> Selecionar Todas
+                        </button>
+                        <button class="selection-btn" id="deselectAllBtn">
+                            <i class="fas fa-square"></i> Desmarcar Todas
+                        </button>
+                        <button class="selection-btn" id="selectEvenBtn">
+                            <i class="fas fa-filter"></i> Pares
+                        </button>
+                        <button class="selection-btn" id="selectOddBtn">
+                            <i class="fas fa-filter"></i> Ímpares
+                        </button>
+                    </div>
                     
                     <div class="control-group">
                         <label>Selecione páginas individuais:</label>
@@ -402,25 +476,25 @@
                             <input type="number" id="rangeStart" placeholder="De" min="1">
                             <span>até</span>
                             <input type="number" id="rangeEnd" placeholder="Até" min="1">
-                            <button class="btn btn-secondary" id="applyRange">Aplicar</button>
+                            <button class="selection-btn" id="applyRange">Aplicar</button>
                         </div>
                     </div>
                     
                     <div class="control-group">
-                        <label>Ação:</label>
+                        <label>Ações de Extração:</label>
                         <div class="action-buttons">
-                            <button class="btn btn-primary" id="extractBtn" disabled>
-                                <i class="fas fa-cut"></i> Extrair Páginas Selecionadas
+                            <button class="btn btn-primary" id="extractSingleBtn" disabled>
+                                <i class="fas fa-cut"></i> Extrair PDF Único
                             </button>
-                            <button class="btn btn-secondary" id="selectAllBtn">
-                                <i class="fas fa-check-square"></i> Selecionar Todas
+                            <button class="btn btn-success" id="extractZipBtn" disabled>
+                                <i class="fas fa-file-archive"></i> Extrair como ZIP
                             </button>
                         </div>
                     </div>
                     
                     <div class="loading" id="loading">
                         <div class="spinner"></div>
-                        <p>Processando PDF, por favor aguarde...</p>
+                        <p id="loadingText">Processando PDF, por favor aguarde...</p>
                     </div>
                 </div>
             </div>
@@ -454,6 +528,7 @@
         let totalPages = 0;
         let selectedPages = new Set();
         let pdfBytes = null;
+        let originalFileName = "";
         
         // Elementos DOM
         const uploadArea = document.getElementById('uploadArea');
@@ -462,13 +537,20 @@
         const fileName = document.getElementById('fileName');
         const fileSize = document.getElementById('fileSize');
         const pageCount = document.getElementById('pageCount');
+        const selectedCount = document.getElementById('selectedCount');
+        const selectedText = document.getElementById('selectedText');
         const pageSelector = document.getElementById('pageSelector');
         const rangeStart = document.getElementById('rangeStart');
         const rangeEnd = document.getElementById('rangeEnd');
         const applyRange = document.getElementById('applyRange');
-        const extractBtn = document.getElementById('extractBtn');
         const selectAllBtn = document.getElementById('selectAllBtn');
+        const deselectAllBtn = document.getElementById('deselectAllBtn');
+        const selectEvenBtn = document.getElementById('selectEvenBtn');
+        const selectOddBtn = document.getElementById('selectOddBtn');
+        const extractSingleBtn = document.getElementById('extractSingleBtn');
+        const extractZipBtn = document.getElementById('extractZipBtn');
         const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
         const previewContainer = document.getElementById('previewContainer');
         const previewPages = document.getElementById('previewPages');
         
@@ -515,13 +597,16 @@
         // Função para processar o arquivo PDF
         async function handlePDFFile(file) {
             // Mostrar informações do arquivo
+            originalFileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extensão
             fileName.textContent = file.name;
             fileSize.textContent = formatFileSize(file.size);
             fileInfo.classList.add('show');
             
             // Mostrar loading
             loading.classList.add('show');
-            extractBtn.disabled = true;
+            loadingText.textContent = "Carregando PDF, por favor aguarde...";
+            extractSingleBtn.disabled = true;
+            extractZipBtn.disabled = true;
             
             try {
                 // Ler o arquivo como array buffer
@@ -565,6 +650,7 @@
         function generatePageSelector(total) {
             pageSelector.innerHTML = '';
             selectedPages.clear();
+            updateSelectedCount();
             
             for (let i = 1; i <= total; i++) {
                 const pageOption = document.createElement('div');
@@ -613,8 +699,11 @@
                 element.classList.add('selected');
             }
             
-            // Atualizar botão de extrair
-            extractBtn.disabled = selectedPages.size === 0;
+            // Atualizar botões de extrair
+            updateExtractButtons();
+            
+            // Atualizar contador
+            updateSelectedCount();
             
             // Atualizar o outro elemento correspondente (seletor ou miniatura)
             const otherElement = document.querySelector(`[data-page="${pageNum}"]:not(.${element.className.includes('page-thumb') ? 'page-thumb' : 'page-option'})`);
@@ -625,6 +714,24 @@
                     otherElement.classList.remove('selected');
                 }
             }
+        }
+        
+        // Atualizar contador de seleções
+        function updateSelectedCount() {
+            const count = selectedPages.size;
+            selectedText.textContent = count;
+            
+            if (count > 0) {
+                selectedCount.style.display = 'block';
+            } else {
+                selectedCount.style.display = 'none';
+            }
+        }
+        
+        // Atualizar estado dos botões de extração
+        function updateExtractButtons() {
+            extractSingleBtn.disabled = selectedPages.size === 0;
+            extractZipBtn.disabled = selectedPages.size === 0;
         }
         
         // Evento para aplicar intervalo
@@ -649,8 +756,9 @@
                 });
             }
             
-            // Atualizar botão de extrair
-            extractBtn.disabled = selectedPages.size === 0;
+            // Atualizar botões e contador
+            updateExtractButtons();
+            updateSelectedCount();
         });
         
         // Evento para selecionar todas as páginas
@@ -666,12 +774,73 @@
                 el.classList.add('selected');
             });
             
-            // Atualizar botão de extrair
-            extractBtn.disabled = false;
+            // Atualizar botões e contador
+            updateExtractButtons();
+            updateSelectedCount();
         });
         
-        // Evento para extrair páginas selecionadas
-        extractBtn.addEventListener('click', async () => {
+        // Evento para desmarcar todas as páginas
+        deselectAllBtn.addEventListener('click', () => {
+            selectedPages.clear();
+            
+            // Atualizar elementos visuais
+            document.querySelectorAll('[data-page]').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Atualizar botões e contador
+            updateExtractButtons();
+            updateSelectedCount();
+        });
+        
+        // Evento para selecionar páginas pares
+        selectEvenBtn.addEventListener('click', () => {
+            selectedPages.clear();
+            
+            for (let i = 2; i <= totalPages; i += 2) {
+                selectedPages.add(i);
+            }
+            
+            // Atualizar elementos visuais
+            document.querySelectorAll('[data-page]').forEach(el => {
+                const pageNum = parseInt(el.dataset.page);
+                if (pageNum % 2 === 0) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+            
+            // Atualizar botões e contador
+            updateExtractButtons();
+            updateSelectedCount();
+        });
+        
+        // Evento para selecionar páginas ímpares
+        selectOddBtn.addEventListener('click', () => {
+            selectedPages.clear();
+            
+            for (let i = 1; i <= totalPages; i += 2) {
+                selectedPages.add(i);
+            }
+            
+            // Atualizar elementos visuais
+            document.querySelectorAll('[data-page]').forEach(el => {
+                const pageNum = parseInt(el.dataset.page);
+                if (pageNum % 2 === 1) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+            
+            // Atualizar botões e contador
+            updateExtractButtons();
+            updateSelectedCount();
+        });
+        
+        // Evento para extrair páginas selecionadas em um único PDF
+        extractSingleBtn.addEventListener('click', async () => {
             if (selectedPages.size === 0) {
                 alert('Por favor, selecione pelo menos uma página.');
                 return;
@@ -679,7 +848,9 @@
             
             // Mostrar loading
             loading.classList.add('show');
-            extractBtn.disabled = true;
+            loadingText.textContent = "Gerando PDF, por favor aguarde...";
+            extractSingleBtn.disabled = true;
+            extractZipBtn.disabled = true;
             
             try {
                 // Criar novo PDF
@@ -706,7 +877,7 @@
                 // Criar link de download
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `pdf_separado_${new Date().getTime()}.pdf`;
+                a.download = `${originalFileName}_paginas_${sortedPages.length}.pdf`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -716,7 +887,7 @@
                 
                 // Ocultar loading
                 loading.classList.remove('show');
-                extractBtn.disabled = false;
+                updateExtractButtons();
                 
                 alert(`PDF criado com sucesso! ${sortedPages.length} página(s) extraída(s).`);
                 
@@ -724,7 +895,69 @@
                 console.error('Erro ao extrair páginas:', error);
                 alert('Erro ao extrair páginas. Tente novamente.');
                 loading.classList.remove('show');
-                extractBtn.disabled = false;
+                updateExtractButtons();
+            }
+        });
+        
+        // Evento para extrair páginas selecionadas como arquivos individuais em um ZIP
+        extractZipBtn.addEventListener('click', async () => {
+            if (selectedPages.size === 0) {
+                alert('Por favor, selecione pelo menos uma página.');
+                return;
+            }
+            
+            // Mostrar loading
+            loading.classList.add('show');
+            loadingText.textContent = "Gerando arquivos PDF individuais e criando ZIP...";
+            extractSingleBtn.disabled = true;
+            extractZipBtn.disabled = true;
+            
+            try {
+                // Ordenar páginas selecionadas
+                const sortedPages = Array.from(selectedPages).sort((a, b) => a - b);
+                
+                // Criar um novo ZIP
+                const zip = new JSZip();
+                
+                // Processar cada página selecionada
+                for (let i = 0; i < sortedPages.length; i++) {
+                    const pageNum = sortedPages[i];
+                    
+                    // Atualizar texto de loading
+                    loadingText.textContent = `Processando página ${pageNum} de ${sortedPages.length}...`;
+                    
+                    // Criar PDF com apenas uma página
+                    const singlePagePdf = await PDFLib.PDFDocument.create();
+                    
+                    // Copiar a página específica
+                    const [page] = await singlePagePdf.copyPages(pdfDoc, [pageNum - 1]);
+                    singlePagePdf.addPage(page);
+                    
+                    // Salvar o PDF de página única
+                    const singlePageBytes = await singlePagePdf.save();
+                    
+                    // Adicionar ao ZIP
+                    zip.file(`${originalFileName}_pagina_${pageNum}.pdf`, singlePageBytes);
+                }
+                
+                // Gerar o arquivo ZIP
+                loadingText.textContent = "Criando arquivo ZIP final...";
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                
+                // Fazer download do ZIP
+                saveAs(zipBlob, `${originalFileName}_paginas_separadas.zip`);
+                
+                // Ocultar loading
+                loading.classList.remove('show');
+                updateExtractButtons();
+                
+                alert(`Arquivo ZIP criado com sucesso! ${sortedPages.length} arquivo(s) PDF individual(is) foram incluídos.`);
+                
+            } catch (error) {
+                console.error('Erro ao criar ZIP:', error);
+                alert('Erro ao criar arquivo ZIP. Tente novamente.');
+                loading.classList.remove('show');
+                updateExtractButtons();
             }
         });
         
@@ -733,6 +966,15 @@
             // Configurar valores padrão para os campos de intervalo
             rangeStart.placeholder = `1 a ${totalPages || 'N'}`;
             rangeEnd.placeholder = `1 a ${totalPages || 'N'}`;
+            
+            // Configurar evento para tecla Enter nos campos de intervalo
+            rangeStart.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') applyRange.click();
+            });
+            
+            rangeEnd.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') applyRange.click();
+            });
         });
     </script>
 </body>
