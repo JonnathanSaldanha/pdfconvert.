@@ -274,11 +274,6 @@
             box-shadow: 0 5px 10px rgba(74, 110, 224, 0.2);
         }
         
-        .selection-btn.active {
-            background: #4a6ee0;
-            color: white;
-        }
-        
         .page-selector {
             display: flex;
             flex-wrap: wrap;
@@ -343,26 +338,24 @@
         }
         
         .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-top: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
         }
         
         .btn {
-            padding: 16px 30px;
+            padding: 16px 20px;
             border: none;
             border-radius: 10px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            flex: 1;
-            min-width: 250px;
+            gap: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
@@ -384,6 +377,16 @@
         .btn-success:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 176, 155, 0.3);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(to right, #ffa726, #ff9800);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 152, 0, 0.3);
         }
         
         .btn:disabled {
@@ -560,8 +563,8 @@
                 font-size: 2.2rem;
             }
             
-            .btn {
-                min-width: 100%;
+            .action-buttons {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -668,10 +671,13 @@
                         <label>Ações de Extração:</label>
                         <div class="action-buttons">
                             <button class="btn btn-primary" id="extractSingleBtn" disabled>
-                                <i class="fas fa-file-pdf"></i> Extrair PDF Único
+                                <i class="fas fa-file-pdf"></i> PDF Único
                             </button>
                             <button class="btn btn-success" id="extractZipBtn" disabled>
-                                <i class="fas fa-file-archive"></i> Extrair como ZIP
+                                <i class="fas fa-file-archive"></i> Todos em ZIP
+                            </button>
+                            <button class="btn btn-warning" id="extractIndividualBtn" disabled>
+                                <i class="fas fa-download"></i> Baixar Individual
                             </button>
                         </div>
                     </div>
@@ -703,7 +709,7 @@
         <footer>
             <div class="developer-info">
                 <i class="fas fa-code"></i>
-                <span>Desenvolvido por Jonathan Saldanhada</span>
+                <span>Desenvolvido por Jonnathan Saldanha</span>
             </div>
         </footer>
     </div>
@@ -735,6 +741,7 @@
         const selectOddBtn = document.getElementById('selectOddBtn');
         const extractSingleBtn = document.getElementById('extractSingleBtn');
         const extractZipBtn = document.getElementById('extractZipBtn');
+        const extractIndividualBtn = document.getElementById('extractIndividualBtn');
         const loading = document.getElementById('loading');
         const loadingText = document.getElementById('loadingText');
         const previewContainer = document.getElementById('previewContainer');
@@ -793,6 +800,7 @@
             loadingText.textContent = "Carregando PDF, por favor aguarde...";
             extractSingleBtn.disabled = true;
             extractZipBtn.disabled = true;
+            extractIndividualBtn.disabled = true;
             selectedCount.classList.remove('show');
             
             try {
@@ -923,8 +931,10 @@
         
         // Atualizar estado dos botões de extração
         function updateExtractButtons() {
-            extractSingleBtn.disabled = selectedPages.size === 0;
-            extractZipBtn.disabled = selectedPages.size === 0;
+            const hasSelection = selectedPages.size > 0;
+            extractSingleBtn.disabled = !hasSelection;
+            extractZipBtn.disabled = !hasSelection;
+            extractIndividualBtn.disabled = !hasSelection;
         }
         
         // Evento para aplicar intervalo
@@ -1056,6 +1066,7 @@
             loadingText.textContent = "Gerando PDF, por favor aguarde...";
             extractSingleBtn.disabled = true;
             extractZipBtn.disabled = true;
+            extractIndividualBtn.disabled = true;
             
             try {
                 // Criar novo PDF
@@ -1116,6 +1127,7 @@
             loadingText.textContent = "Gerando arquivos PDF individuais e criando ZIP...";
             extractSingleBtn.disabled = true;
             extractZipBtn.disabled = true;
+            extractIndividualBtn.disabled = true;
             
             try {
                 // Ordenar páginas selecionadas
@@ -1166,6 +1178,81 @@
             }
         });
         
+        // Evento para baixar cada página selecionada individualmente
+        extractIndividualBtn.addEventListener('click', async () => {
+            if (selectedPages.size === 0) {
+                showNotification('Por favor, selecione pelo menos uma página.', 'error');
+                return;
+            }
+            
+            // Perguntar ao usuário se ele quer baixar todas de uma vez
+            const sortedPages = Array.from(selectedPages).sort((a, b) => a - b);
+            const confirmMessage = `Deseja baixar ${sortedPages.length} arquivo(s) PDF individual(mente)?\n\nCada página será baixada como um arquivo separado.`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Mostrar loading
+            loading.classList.add('show');
+            loadingText.textContent = "Preparando downloads individuais...";
+            extractSingleBtn.disabled = true;
+            extractZipBtn.disabled = true;
+            extractIndividualBtn.disabled = true;
+            
+            try {
+                // Processar cada página selecionada
+                for (let i = 0; i < sortedPages.length; i++) {
+                    const pageNum = sortedPages[i];
+                    
+                    // Atualizar texto de loading
+                    loadingText.textContent = `Gerando página ${i+1} de ${sortedPages.length}...`;
+                    
+                    // Criar PDF com apenas uma página
+                    const singlePagePdf = await PDFLib.PDFDocument.create();
+                    
+                    // Copiar a página específica
+                    const [page] = await singlePagePdf.copyPages(pdfDoc, [pageNum - 1]);
+                    singlePagePdf.addPage(page);
+                    
+                    // Salvar o PDF de página única
+                    const singlePageBytes = await singlePagePdf.save();
+                    
+                    // Criar blob para download
+                    const blob = new Blob([singlePageBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Criar link de download
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${originalFileName}_pagina_${pageNum}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    // Liberar URL
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    
+                    // Pequena pausa entre downloads para não sobrecarregar o navegador
+                    if (i < sortedPages.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                    }
+                }
+                
+                // Ocultar loading
+                loading.classList.remove('show');
+                updateExtractButtons();
+                
+                showNotification(`Downloads concluídos! ${sortedPages.length} arquivo(s) PDF baixado(s) individualmente.`, 'success');
+                
+            } catch (error) {
+                console.error('Erro ao baixar páginas individuais:', error);
+                showNotification('Erro ao baixar páginas individuais. Tente novamente.', 'error');
+                loading.classList.remove('show');
+                updateExtractButtons();
+            }
+        });
+        
         // Função para mostrar notificação
         function showNotification(message, type = 'info') {
             // Remover notificação anterior se existir
@@ -1197,6 +1284,8 @@
                 notification.style.background = 'linear-gradient(to right, #00b09b, #96c93d)';
             } else if (type === 'error') {
                 notification.style.background = 'linear-gradient(to right, #ff416c, #ff4b2b)';
+            } else if (type === 'warning') {
+                notification.style.background = 'linear-gradient(to right, #ffa726, #ff9800)';
             } else {
                 notification.style.background = 'linear-gradient(to right, #4a6ee0, #6a11cb)';
             }
@@ -1240,6 +1329,12 @@
             setTimeout(() => {
                 showNotification('Bem-vindo ao Separador de PDF! Arraste ou selecione um arquivo para começar.', 'info');
             }, 1000);
+            
+            // Atualizar nome do desenvolvedor
+            const developerName = document.querySelector('.developer-info span');
+            if (developerName) {
+                developerName.textContent = 'Desenvolvido por Jonnathan Saldanha';
+            }
         });
     </script>
 </body>
