@@ -6,6 +6,7 @@
     <title>Separador de PDF por Páginas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -24,7 +25,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background-color: white;
             border-radius: 20px;
@@ -83,7 +84,7 @@
         header p {
             font-size: 1.2rem;
             opacity: 0.95;
-            max-width: 700px;
+            max-width: 900px;
             margin: 0 auto;
             line-height: 1.5;
         }
@@ -95,18 +96,23 @@
             gap: 30px;
         }
         
-        .upload-section {
+        .left-panel {
             flex: 1;
-            min-width: 350px;
-            padding: 30px;
-            background: #f8faff;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
         }
         
-        .preview-section {
+        .right-panel {
             flex: 1;
-            min-width: 350px;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .section {
             padding: 30px;
             background: #f8faff;
             border-radius: 15px;
@@ -548,11 +554,182 @@
             color: #6a11cb;
         }
         
-        @media (max-width: 900px) {
+        /* Novos estilos para renomeamento */
+        .rename-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(to right, #f9f9ff, #f0f4ff);
+            border-radius: 10px;
+            border: 2px solid #e0e7ff;
+            display: none;
+        }
+        
+        .rename-panel.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .rename-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 15px;
+            background: linear-gradient(to right, #f0f4ff, #eef2ff);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e7ff;
+        }
+        
+        .rename-toggle:hover {
+            border-color: #4a6ee0;
+        }
+        
+        .rename-toggle i {
+            transition: transform 0.3s;
+        }
+        
+        .rename-toggle.collapsed i {
+            transform: rotate(180deg);
+        }
+        
+        .rename-options {
+            margin-bottom: 20px;
+        }
+        
+        .rename-pattern {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .rename-pattern input {
+            padding: 12px 15px;
+            border: 2px solid #e0e7ff;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .rename-pattern input:focus {
+            outline: none;
+            border-color: #6a11cb;
+            box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.1);
+        }
+        
+        .data-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .data-option {
+            padding: 12px;
+            background: white;
+            border: 2px solid #e0e7ff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .data-option:hover {
+            border-color: #4a6ee0;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(74, 110, 224, 0.1);
+        }
+        
+        .data-option.selected {
+            background: linear-gradient(to bottom right, #f0f4ff, #eef2ff);
+            border-color: #6a11cb;
+            color: #6a11cb;
+            font-weight: 600;
+        }
+        
+        .data-option i {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            color: #4a6ee0;
+        }
+        
+        .data-option.selected i {
+            color: #6a11cb;
+        }
+        
+        .preview-filename {
+            background: white;
+            border: 2px solid #e0e7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 1rem;
+            word-break: break-all;
+            display: none;
+        }
+        
+        .preview-filename.show {
+            display: block;
+        }
+        
+        .preview-filename span {
+            color: #6a11cb;
+            font-weight: 600;
+        }
+        
+        .variables-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .variable-item {
+            padding: 10px;
+            background: #eef2ff;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .variable-item code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #d0d9ff;
+        }
+        
+        .variable-item button {
+            background: #4a6ee0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .variable-item button:hover {
+            background: #6a11cb;
+        }
+        
+        @media (max-width: 1100px) {
             .main-content {
                 flex-direction: column;
                 padding: 25px;
                 gap: 25px;
+            }
+            
+            .left-panel, .right-panel {
+                min-width: 100%;
             }
             
             header {
@@ -573,7 +750,7 @@
                 padding: 20px;
             }
             
-            .upload-section, .preview-section {
+            .section {
                 padding: 20px;
             }
             
@@ -594,6 +771,10 @@
             .range-selector {
                 flex-wrap: wrap;
             }
+            
+            .data-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
@@ -604,35 +785,68 @@
                 <div class="logo-icon">
                     <i class="fas fa-file-pdf"></i>
                 </div>
-                <h1>Separador de PDF</h1>
+                <h1>Separador de PDF Inteligente</h1>
             </div>
-            <p>Carregue um arquivo PDF e selecione as páginas que deseja separar em arquivos individuais</p>
+            <p>Carregue um arquivo PDF, selecione as páginas e renomeie automaticamente com base em dados extraídos do documento</p>
         </header>
         
         <div class="main-content">
-            <div class="upload-section">
-                <h2 class="section-title">Carregar PDF</h2>
-                
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">
-                        <i class="fas fa-cloud-upload-alt"></i>
+            <div class="left-panel">
+                <div class="section">
+                    <h2 class="section-title">Carregar PDF</h2>
+                    
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="upload-text">Clique para selecionar um arquivo PDF</div>
+                        <div class="upload-subtext">Ou arraste e solte o arquivo aqui</div>
+                        <input type="file" id="pdfInput" accept=".pdf">
                     </div>
-                    <div class="upload-text">Clique para selecionar um arquivo PDF</div>
-                    <div class="upload-subtext">Ou arraste e solte o arquivo aqui</div>
-                    <input type="file" id="pdfInput" accept=".pdf">
+                    
+                    <div class="file-info" id="fileInfo">
+                        <p><i class="fas fa-file"></i><strong>Arquivo:</strong> <span id="fileName"></span></p>
+                        <p><i class="fas fa-weight"></i><strong>Tamanho:</strong> <span id="fileSize"></span></p>
+                        <p><i class="fas fa-copy"></i><strong>Páginas:</strong> <span id="pageCount"></span></p>
+                        <p><i class="fas fa-barcode"></i><strong>Dados Detectados:</strong> <span id="dataCount">0</span></p>
+                    </div>
+                    
+                    <div class="selected-count" id="selectedCount">
+                        <span id="selectedText">0</span> página(s) selecionada(s)
+                    </div>
+                    
+                    <div class="rename-toggle" id="renameToggle">
+                        <div>
+                            <h3 style="margin: 0; color: #4a6ee0;"><i class="fas fa-tag"></i> Renomeamento Automático</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #666;">Clique para configurar o renomeamento dos arquivos</p>
+                        </div>
+                        <i class="fas fa-chevron-up"></i>
+                    </div>
+                    
+                    <div class="rename-panel" id="renamePanel">
+                        <div class="rename-options">
+                            <label>Padrão de Nomeação:</label>
+                            <div class="rename-pattern">
+                                <input type="text" id="renamePattern" value="{nome_original}_{numero_controle}_{pagina}" placeholder="Ex: {nome_original}_{data}_{pagina}">
+                                <button class="selection-btn" id="applyPattern">
+                                    <i class="fas fa-check"></i> Aplicar
+                                </button>
+                            </div>
+                            
+                            <label>Selecione os dados para extrair:</label>
+                            <div class="data-selector" id="dataSelector">
+                                <!-- Os dados detectados serão gerados aqui -->
+                            </div>
+                            
+                            <div class="preview-filename" id="previewFilename">
+                                <strong>Pré-visualização:</strong><br>
+                                <span id="filenamePreview">arquivo_pagina_1.pdf</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="file-info" id="fileInfo">
-                    <p><i class="fas fa-file"></i><strong>Arquivo:</strong> <span id="fileName"></span></p>
-                    <p><i class="fas fa-weight"></i><strong>Tamanho:</strong> <span id="fileSize"></span></p>
-                    <p><i class="fas fa-copy"></i><strong>Páginas:</strong> <span id="pageCount"></span></p>
-                </div>
-                
-                <div class="selected-count" id="selectedCount">
-                    <span id="selectedText">0</span> página(s) selecionada(s)
-                </div>
-                
-                <div class="controls">
+                <div class="section">
                     <h2 class="section-title">Selecionar Páginas</h2>
                     
                     <div class="selection-buttons">
@@ -666,42 +880,45 @@
                             <button class="selection-btn" id="applyRange">Aplicar</button>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="section">
+                    <h2 class="section-title">Visualização</h2>
                     
-                    <div class="control-group">
-                        <label>Ações de Extração:</label>
-                        <div class="action-buttons">
-                            <button class="btn btn-primary" id="extractSingleBtn" disabled>
-                                <i class="fas fa-file-pdf"></i> PDF Único
-                            </button>
-                            <button class="btn btn-success" id="extractZipBtn" disabled>
-                                <i class="fas fa-file-archive"></i> Todos em ZIP
-                            </button>
-                            <button class="btn btn-warning" id="extractIndividualBtn" disabled>
-                                <i class="fas fa-download"></i> Baixar Individual
-                            </button>
+                    <div class="preview-container" id="previewContainer">
+                        <div class="preview-icon">
+                            <i class="fas fa-file-pdf"></i>
                         </div>
+                        <p>Nenhum PDF carregado</p>
+                        <p>Selecione um arquivo para visualizar as páginas</p>
+                    </div>
+                    
+                    <div class="preview-pages" id="previewPages" style="display: none;">
+                        <!-- As miniaturas das páginas serão geradas aqui -->
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2 class="section-title">Ações de Extração</h2>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="extractSingleBtn" disabled>
+                            <i class="fas fa-file-pdf"></i> PDF Único
+                        </button>
+                        <button class="btn btn-success" id="extractZipBtn" disabled>
+                            <i class="fas fa-file-archive"></i> Todos em ZIP
+                        </button>
+                        <button class="btn btn-warning" id="extractIndividualBtn" disabled>
+                            <i class="fas fa-download"></i> Baixar Individual
+                        </button>
                     </div>
                     
                     <div class="loading" id="loading">
                         <div class="spinner"></div>
                         <p id="loadingText">Processando PDF, por favor aguarde...</p>
                     </div>
-                </div>
-            </div>
-            
-            <div class="preview-section">
-                <h2 class="section-title">Visualização</h2>
-                
-                <div class="preview-container" id="previewContainer">
-                    <div class="preview-icon">
-                        <i class="fas fa-file-pdf"></i>
-                    </div>
-                    <p>Nenhum PDF carregado</p>
-                    <p>Selecione um arquivo para visualizar as páginas</p>
-                </div>
-                
-                <div class="preview-pages" id="previewPages" style="display: none;">
-                    <!-- As miniaturas das páginas serão geradas aqui -->
                 </div>
             </div>
         </div>
@@ -721,6 +938,9 @@
         let selectedPages = new Set();
         let pdfBytes = null;
         let originalFileName = "";
+        let extractedData = {};
+        let selectedDataFields = new Set(['nome_original', 'pagina', 'numero_controle']);
+        let renamePattern = "{nome_original}_{numero_controle}_{pagina}";
         
         // Elementos DOM
         const uploadArea = document.getElementById('uploadArea');
@@ -729,6 +949,7 @@
         const fileName = document.getElementById('fileName');
         const fileSize = document.getElementById('fileSize');
         const pageCount = document.getElementById('pageCount');
+        const dataCount = document.getElementById('dataCount');
         const selectedCount = document.getElementById('selectedCount');
         const selectedText = document.getElementById('selectedText');
         const pageSelector = document.getElementById('pageSelector');
@@ -746,6 +967,15 @@
         const loadingText = document.getElementById('loadingText');
         const previewContainer = document.getElementById('previewContainer');
         const previewPages = document.getElementById('previewPages');
+        
+        // Elementos para renomeamento
+        const renameToggle = document.getElementById('renameToggle');
+        const renamePanel = document.getElementById('renamePanel');
+        const renamePatternInput = document.getElementById('renamePattern');
+        const applyPatternBtn = document.getElementById('applyPattern');
+        const dataSelector = document.getElementById('dataSelector');
+        const previewFilename = document.getElementById('previewFilename');
+        const filenamePreview = document.getElementById('filenamePreview');
         
         // Evento para clicar na área de upload
         uploadArea.addEventListener('click', () => {
@@ -787,6 +1017,40 @@
             }
         });
         
+        // Evento para toggle do painel de renomeamento
+        renameToggle.addEventListener('click', () => {
+            renameToggle.classList.toggle('collapsed');
+            renamePanel.classList.toggle('show');
+        });
+        
+        // Evento para aplicar padrão de renomeamento
+        applyPatternBtn.addEventListener('click', () => {
+            renamePattern = renamePatternInput.value.trim();
+            if (renamePattern) {
+                console.log('Novo padrão aplicado:', renamePattern);
+                updateFilenamePreview();
+                showNotification('Padrão de nomeação aplicado com sucesso!', 'success');
+                
+                // Forçar atualização da visualização das miniaturas se houver páginas selecionadas
+                if (selectedPages.size > 0) {
+                    // Atualizar visualmente as miniaturas para mostrar o novo nome
+                    document.querySelectorAll('.page-thumb').forEach(thumb => {
+                        const pageNum = parseInt(thumb.dataset.page);
+                        // Você pode adicionar o nome como tooltip ou texto adicional
+                        thumb.title = generateFilename(pageNum);
+                    });
+                }
+            } else {
+                showNotification('Por favor, insira um padrão válido.', 'error');
+            }
+        });
+        
+        // Atualizar pré-visualização quando o padrão for alterado no input
+        renamePatternInput.addEventListener('input', () => {
+            renamePattern = renamePatternInput.value.trim();
+            updateFilenamePreview();
+        });
+        
         // Função para processar o arquivo PDF
         async function handlePDFFile(file) {
             // Mostrar informações do arquivo
@@ -802,22 +1066,30 @@
             extractZipBtn.disabled = true;
             extractIndividualBtn.disabled = true;
             selectedCount.classList.remove('show');
+            renamePanel.classList.remove('show');
+            renameToggle.classList.add('collapsed');
             
             try {
                 // Ler o arquivo como array buffer
                 const arrayBuffer = await file.arrayBuffer();
                 pdfBytes = new Uint8Array(arrayBuffer);
                 
-                // Carregar PDF
+                // Carregar PDF com pdf-lib para manipulação
                 pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
                 totalPages = pdfDoc.getPageCount();
                 pageCount.textContent = totalPages;
+                
+                // Extrair dados do PDF
+                await extractPDFData(arrayBuffer);
                 
                 // Gerar seletores de página
                 generatePageSelector(totalPages);
                 
                 // Gerar visualização de páginas
                 generatePagePreviews(totalPages);
+                
+                // Gerar seletor de dados
+                generateDataSelector();
                 
                 // Atualizar limites dos campos de intervalo
                 rangeStart.max = totalPages;
@@ -826,17 +1098,356 @@
                 rangeEnd.placeholder = `1 a ${totalPages}`;
                 rangeEnd.value = totalPages;
                 
+                // Atualizar preview do nome do arquivo
+                updateFilenamePreview();
+                
                 // Ocultar loading
                 loading.classList.remove('show');
                 
                 // Mostrar notificação
-                showNotification(`PDF carregado com sucesso! ${totalPages} página(s) disponível(is).`, 'success');
+                showNotification(`PDF carregado com sucesso! ${totalPages} página(s) disponível(is). ${Object.keys(extractedData).length} dado(s) detectado(s).`, 'success');
                 
             } catch (error) {
                 console.error('Erro ao carregar PDF:', error);
                 showNotification('Erro ao carregar o arquivo PDF. Certifique-se de que é um PDF válido.', 'error');
                 loading.classList.remove('show');
             }
+        }
+        
+        // Extrair dados do PDF
+        async function extractPDFData(arrayBuffer) {
+            extractedData = {
+                nome_original: originalFileName,
+                pagina: "{pagina}",
+                total_paginas: totalPages
+            };
+            
+            try {
+                // Configurar pdf.js para extrair texto
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+                
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = "";
+                
+                // Extrair texto de todas as páginas
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + ' ';
+                }
+                
+                // Padrões de busca comuns em documentos brasileiros
+                const patterns = {
+                    // Códigos de barras numéricos (linha digitável)
+                    'codigo_barras': /\d{5}\.\d{5} \d{5}\.\d{6} \d{5}\.\d{6} \d \d{14}/g,
+                    
+                    // Números de controle
+                    'numero_controle': /(?:(?:Nº|Numero|Número)[\s:]*?(?:de[\s]*?)?(?:Controle|CONTROLE)[\s:]*?)(\d{8,20})/gi,
+                    
+                    // CNPJ/CPF
+                    'cnpj_cpf': /(\d{2,3}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})/g,
+                    
+                    // Datas no formato brasileiro
+                    'data_vencimento': /(?:Vencimento|vencimento)[\s:]*?(\d{2}\/\d{2}\/\d{4})/gi,
+                    'data_emissao': /(?:Emissão|emissão|Data)[\s:]*?(\d{2}\/\d{2}\/\d{4})/gi,
+                    
+                    // Período de referência
+                    'periodo_referencia': /(?:Período|Periodo|Referência|Referencia)[\s:]*?(?:de[\s]*?)?(?:Referência|Referencia)?[\s:]*?(\d{2}\/\d{4}|\d{2}\/\d{2}\/\d{4})/gi,
+                    
+                    // Valores monetários
+                    'valor_total': /(?:Total|VALOR TOTAL|Valor Total)[\s:]*?(?:a[\s]*?)?(?:Recolher|Pagar)?[\s:]*?R\$\s*?([\d\.,]+)/gi,
+                    'valor_principal': /(?:Principal|Valor Principal)[\s:]*?R\$\s*?([\d\.,]+)/gi,
+                    
+                    // Número do documento
+                    'numero_documento': /(?:Documento|DOCUMENTO|Nº Doc\.)[\s:]*?(?:de[\s]*?)?(?:Origem)?[\s:]*?(\d{4,20})/gi,
+                    
+                    // Códigos de convênio/protocolo
+                    'codigo_convenio': /(?:Convênio|Convenio|Protocolo)[\s:]*?[:]?\s*?(\d{10,30})/gi,
+                    
+                    // Código da receita
+                    'codigo_receita': /(?:Código|Codigo)[\s:]*?(?:da[\s]*?)?(?:Receita)[\s:]*?[:]?\s*?(\d{3,10})/gi,
+                    
+                    // Município/UF
+                    'municipio': /(?:Município|Municipio)[\s:]*?[:]?\s*?([A-ZÀ-Ú\s]{3,50})/gi,
+                    'uf': /(?:UF|Estado)[\s:]*?[:]?\s*?([A-Z]{2})/gi,
+                    
+                    // Razão social
+                    'razao_social': /(?:Razão Social|Razao Social)[\s:]*?[:]?\s*?([A-ZÀ-Ú0-9\s\.,&]{5,100})/gi
+                };
+                
+                // Buscar cada padrão
+                for (const [key, pattern] of Object.entries(patterns)) {
+                    const matches = fullText.match(pattern);
+                    if (matches && matches.length > 0) {
+                        // Pegar o primeiro match único
+                        const uniqueMatches = [...new Set(matches.map(m => m.replace(/^.*?[:]?\s*/, '')))];
+                        extractedData[key] = uniqueMatches[0].trim();
+                        
+                        // Para alguns campos, extrair apenas o valor numérico/formatado
+                        if (key === 'numero_controle' && extractedData[key]) {
+                            const numMatch = extractedData[key].match(/\d{8,20}/);
+                            if (numMatch) extractedData[key] = numMatch[0];
+                        }
+                    }
+                }
+                
+                // Extrair códigos de barras numéricos (linhas digitáveis)
+                const barcodeMatches = fullText.match(/\d{44,48}/g);
+                if (barcodeMatches && barcodeMatches.length > 0) {
+                    extractedData['linha_digitavel'] = barcodeMatches[0];
+                }
+                
+                // Extrair UF favorecida (comum em GNRE)
+                const ufFavorecidaMatch = fullText.match(/(?:UF Favorecida|UF[\s]*?Favorecida)[\s:]*?([A-Z]{2})/gi);
+                if (ufFavorecidaMatch) {
+                    const ufMatch = ufFavorecidaMatch[0].match(/[A-Z]{2}/);
+                    if (ufMatch) extractedData['uf_favorecida'] = ufMatch[0];
+                }
+                
+                // Tentar extrair dados específicos do exemplo fornecido
+                const specificData = {
+                    // Número de Controle do exemplo: 0000016381481463
+                    'numero_controle': fullText.match(/\b\d{14,20}\b/g)?.find(num => num.length >= 14),
+                    
+                    // Período de Referência: 01/2026
+                    'periodo_referencia': fullText.match(/\d{2}\/\d{4}/g)?.[0],
+                    
+                    // Código de barras do exemplo: 85860000004 7 59730302260 9 15010000016 1 38148146300 9
+                    'codigo_barras_completo': fullText.match(/(?:\d{11}\s\d{1}\s){3}\d{11}\s\d{1}/g)?.[0],
+                    
+                    // CNPJ: 09.326.342/0001-70
+                    'cnpj': fullText.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g)?.[0],
+                    
+                    // Valor Principal: R$ 459,73
+                    'valor': fullText.match(/R\$\s*[\d\.,]+/g)?.[0]?.replace('R$', '').trim(),
+                    
+                    // Data de Vencimento: 15/01/2026
+                    'data': fullText.match(/\d{2}\/\d{2}\/\d{4}/g)?.[0]
+                };
+                
+                // Adicionar dados específicos encontrados
+                for (const [key, value] of Object.entries(specificData)) {
+                    if (value && !extractedData[key]) {
+                        extractedData[key] = value;
+                    }
+                }
+                
+                // Log para debug
+                console.log('Dados extraídos:', extractedData);
+                
+                // Atualizar contador de dados
+                dataCount.textContent = Object.keys(extractedData).length;
+                
+            } catch (error) {
+                console.error('Erro ao extrair dados do PDF:', error);
+                extractedData = {
+                    nome_original: originalFileName,
+                    pagina: "{pagina}",
+                    total_paginas: totalPages
+                };
+                dataCount.textContent = Object.keys(extractedData).length;
+            }
+        }
+        
+        // Gerar seletor de dados para renomeamento
+        function generateDataSelector() {
+            dataSelector.innerHTML = '';
+            selectedDataFields.clear();
+            
+            // Adicionar campos padrão
+            const defaultFields = [
+                { id: 'nome_original', name: 'Nome Original', icon: 'fa-file' },
+                { id: 'pagina', name: 'Número da Página', icon: 'fa-file-alt' },
+                { id: 'total_paginas', name: 'Total de Páginas', icon: 'fa-copy' }
+            ];
+            
+            // Adicionar campos extraídos
+            const extractedFields = Object.keys(extractedData)
+                .filter(key => !['nome_original', 'pagina', 'total_paginas'].includes(key))
+                .map(key => ({
+                    id: key,
+                    name: formatFieldName(key),
+                    icon: getIconForField(key)
+                }));
+            
+            // Combinar todos os campos
+            const allFields = [...defaultFields, ...extractedFields];
+            
+            // Criar opções para cada campo
+            allFields.forEach(field => {
+                const option = document.createElement('div');
+                option.className = 'data-option';
+                if (['nome_original', 'pagina', 'numero_controle'].includes(field.id)) {
+                    option.classList.add('selected');
+                    selectedDataFields.add(field.id);
+                }
+                option.dataset.field = field.id;
+                option.innerHTML = `
+                    <i class="fas ${field.icon}"></i>
+                    <div>${field.name}</div>
+                `;
+                
+                option.addEventListener('click', () => {
+                    option.classList.toggle('selected');
+                    if (option.classList.contains('selected')) {
+                        selectedDataFields.add(field.id);
+                    } else {
+                        selectedDataFields.delete(field.id);
+                    }
+                    updateFilenamePreview();
+                });
+                
+                dataSelector.appendChild(option);
+            });
+            
+            // Mostrar painel de renomeamento se houver dados extraídos
+            if (extractedFields.length > 0) {
+                previewFilename.classList.add('show');
+            }
+        }
+        
+        // Formatar nome do campo para exibição
+        function formatFieldName(fieldId) {
+            return fieldId
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+        
+        // Obter ícone apropriado para o campo
+        function getIconForField(fieldId) {
+            const iconMap = {
+                'numero_controle': 'fa-hashtag',
+                'cnpj_cpf': 'fa-id-card',
+                'cnpj': 'fa-id-card',
+                'data_vencimento': 'fa-calendar-day',
+                'data_emissao': 'fa-calendar-alt',
+                'data': 'fa-calendar',
+                'periodo_referencia': 'fa-calendar-week',
+                'valor_total': 'fa-money-bill-wave',
+                'valor_principal': 'fa-money-bill',
+                'valor': 'fa-money-bill',
+                'numero_documento': 'fa-file-invoice',
+                'codigo_convenio': 'fa-handshake',
+                'codigo_receita': 'fa-receipt',
+                'codigo_barras': 'fa-barcode',
+                'codigo_barras_completo': 'fa-barcode',
+                'linha_digitavel': 'fa-barcode',
+                'municipio': 'fa-city',
+                'uf': 'fa-map-marker-alt',
+                'uf_favorecida': 'fa-map-pin',
+                'razao_social': 'fa-building',
+                'default': 'fa-tag'
+            };
+            
+            return iconMap[fieldId] || iconMap.default;
+        }
+        
+        // Atualizar pré-visualização do nome do arquivo
+        function updateFilenamePreview() {
+            console.log('Atualizando pré-visualização do nome');
+            console.log('Padrão atual:', renamePattern);
+            console.log('Dados disponíveis:', extractedData);
+            
+            let filename = renamePattern;
+            
+            // Substituir {pagina} por exemplo (página 1)
+            filename = filename.replace(/{pagina}/g, '1');
+            
+            // Substituir outras variáveis
+            for (const field of selectedDataFields) {
+                if (field === 'pagina') continue; // Já tratamos acima
+                
+                const value = extractedData[field];
+                const placeholder = `{${field}}`;
+                
+                if (value && value !== 'undefined' && value !== 'null') {
+                    const regex = new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                    filename = filename.replace(regex, cleanFilename(value.toString()));
+                }
+            }
+            
+            // Remover placeholders não substituídos
+            filename = filename.replace(/\{[^}]*\}/g, '');
+            
+            // Limpar
+            filename = filename
+                .replace(/_+/g, '_')
+                .replace(/\s+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .replace(/_{2,}/g, '_');
+            
+            // Se ficou vazio, usar padrão
+            if (!filename.trim() || filename === '_' || filename === '') {
+                filename = 'exemplo_pagina_1';
+            }
+            
+            filename = filename.replace(/\.pdf$/i, '') + '.pdf';
+            
+            console.log('Pré-visualização:', filename);
+            filenamePreview.textContent = filename;
+            previewFilename.classList.add('show');
+        }
+        
+        // Gerar nome de arquivo baseado no padrão e dados
+        function generateFilename(pageNum = 1) {
+            console.log('Gerando nome para página:', pageNum);
+            console.log('Padrão:', renamePattern);
+            console.log('Dados disponíveis:', extractedData);
+            console.log('Campos selecionados:', Array.from(selectedDataFields));
+            
+            let filename = renamePattern;
+            
+            // Primeiro, substituir a página
+            filename = filename.replace(/{pagina}/g, pageNum.toString());
+            
+            // Substituir todas as outras variáveis
+            for (const [key, value] of Object.entries(extractedData)) {
+                // Se este campo está selecionado pelo usuário OU é um campo padrão
+                if (selectedDataFields.has(key) || ['nome_original', 'pagina', 'total_paginas'].includes(key)) {
+                    const placeholder = `{${key}}`;
+                    const regex = new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                    
+                    // Se o valor existir e não for undefined/null
+                    if (value && value !== 'undefined' && value !== 'null') {
+                        // Para campo 'pagina', já substituímos acima
+                        if (key === 'pagina') continue;
+                        
+                        filename = filename.replace(regex, cleanFilename(value.toString()));
+                    }
+                }
+            }
+            
+            // Remover quaisquer placeholders restantes que não foram substituídos
+            filename = filename.replace(/\{[^}]*\}/g, '');
+            
+            // Limpar caracteres duplicados e espaços extras
+            filename = filename
+                .replace(/_+/g, '_')
+                .replace(/\s+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .replace(/_{2,}/g, '_');
+            
+            // Se o nome ficou vazio, usar nome original com número da página
+            if (!filename.trim() || filename === '_' || filename === '') {
+                filename = `${originalFileName}_${pageNum}`;
+            }
+            
+            // Remover extensão .pdf se já existir e adicionar novamente
+            filename = filename.replace(/\.pdf$/i, '');
+            
+            console.log('Nome gerado:', filename + '.pdf');
+            return filename + '.pdf';
+        }
+        
+        // Limpar nome de arquivo (remover caracteres inválidos)
+        function cleanFilename(filename) {
+            return filename
+                .replace(/[<>:"/\\|?*]/g, '_') // Remover caracteres inválidos
+                .replace(/\s+/g, '_') // Substituir espaços por underscore
+                .replace(/_+/g, '_') // Remover underscores duplicados
+                .substring(0, 100); // Limitar tamanho
         }
         
         // Formatar tamanho do arquivo
@@ -1086,6 +1697,9 @@
                 // Salvar o novo PDF
                 const newPdfBytes = await newPdf.save();
                 
+                // Gerar nome do arquivo
+                const filename = generateFilename();
+                
                 // Criar blob e link para download
                 const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
@@ -1093,7 +1707,7 @@
                 // Criar link de download
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${originalFileName}_paginas_${sortedPages.length}.pdf`;
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -1105,7 +1719,7 @@
                 loading.classList.remove('show');
                 updateExtractButtons();
                 
-                showNotification(`PDF criado com sucesso! ${sortedPages.length} página(s) extraída(s).`, 'success');
+                showNotification(`PDF "${filename}" criado com sucesso! ${sortedPages.length} página(s) extraída(s).`, 'success');
                 
             } catch (error) {
                 console.error('Erro ao extrair páginas:', error);
@@ -1153,22 +1767,28 @@
                     // Salvar o PDF de página única
                     const singlePageBytes = await singlePagePdf.save();
                     
+                    // Gerar nome do arquivo baseado na página
+                    const filename = generateFilename(pageNum);
+                    
                     // Adicionar ao ZIP
-                    zip.file(`${originalFileName}_pagina_${pageNum}.pdf`, singlePageBytes);
+                    zip.file(filename, singlePageBytes);
                 }
                 
                 // Gerar o arquivo ZIP
                 loadingText.textContent = "Criando arquivo ZIP final...";
                 const zipBlob = await zip.generateAsync({ type: "blob" });
                 
+                // Gerar nome para o ZIP
+                const zipFilename = generateFilename().replace('.pdf', '_paginas.zip');
+                
                 // Fazer download do ZIP
-                saveAs(zipBlob, `${originalFileName}_paginas_separadas.zip`);
+                saveAs(zipBlob, zipFilename);
                 
                 // Ocultar loading
                 loading.classList.remove('show');
                 updateExtractButtons();
                 
-                showNotification(`Arquivo ZIP criado com sucesso! ${sortedPages.length} arquivo(s) PDF individual(is) foram incluídos.`, 'success');
+                showNotification(`Arquivo ZIP "${zipFilename}" criado com sucesso! ${sortedPages.length} arquivo(s) PDF individual(is) foram incluídos.`, 'success');
                 
             } catch (error) {
                 console.error('Erro ao criar ZIP:', error);
@@ -1187,7 +1807,7 @@
             
             // Perguntar ao usuário se ele quer baixar todas de uma vez
             const sortedPages = Array.from(selectedPages).sort((a, b) => a - b);
-            const confirmMessage = `Deseja baixar ${sortedPages.length} arquivo(s) PDF individual(mente)?\n\nCada página será baixada como um arquivo separado.`;
+            const confirmMessage = `Deseja baixar ${sortedPages.length} arquivo(s) PDF individual(mente)?\n\nCada página será baixada como um arquivo separado com nome personalizado.`;
             
             if (!confirm(confirmMessage)) {
                 return;
@@ -1218,6 +1838,9 @@
                     // Salvar o PDF de página única
                     const singlePageBytes = await singlePagePdf.save();
                     
+                    // Gerar nome do arquivo baseado na página
+                    const filename = generateFilename(pageNum);
+                    
                     // Criar blob para download
                     const blob = new Blob([singlePageBytes], { type: 'application/pdf' });
                     const url = URL.createObjectURL(blob);
@@ -1225,7 +1848,7 @@
                     // Criar link de download
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `${originalFileName}_pagina_${pageNum}.pdf`;
+                    a.download = filename;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -1243,7 +1866,7 @@
                 loading.classList.remove('show');
                 updateExtractButtons();
                 
-                showNotification(`Downloads concluídos! ${sortedPages.length} arquivo(s) PDF baixado(s) individualmente.`, 'success');
+                showNotification(`Downloads concluídos! ${sortedPages.length} arquivo(s) PDF baixado(s) individualmente com nomes personalizados.`, 'success');
                 
             } catch (error) {
                 console.error('Erro ao baixar páginas individuais:', error);
@@ -1325,9 +1948,14 @@
                 if (e.key === 'Enter') applyRange.click();
             });
             
+            // Configurar evento para tecla Enter no padrão de renomeamento
+            renamePatternInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') applyPatternBtn.click();
+            });
+            
             // Mensagem de boas-vindas
             setTimeout(() => {
-                showNotification('Bem-vindo ao Separador de PDF! Arraste ou selecione um arquivo para começar.', 'info');
+                showNotification('Bem-vindo ao Separador de PDF Inteligente! Arraste ou selecione um arquivo para começar.', 'info');
             }, 1000);
             
             // Atualizar nome do desenvolvedor
